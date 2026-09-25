@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Radiological Safety & QA Portal</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background-color: #f8f9fa; color: #333; }
+    h1 { text-align: center; color: #1a365d; }
+    
+    .tab-container { display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 2px solid #0056b3; background: #e9ecef; padding: 5px 5px 0 5px; border-radius: 6px 6px 0 0; }
+    .tab-button { padding: 10px 16px; border: none; background: #dee2e6; cursor: pointer; font-weight: bold; border-radius: 4px 4px 0 0; transition: 0.2s; }
+    .tab-button:hover { background: #ced4da; }
+    .tab-button.active { background: #0056b3; color: white; }
+
+    .tab-content { display: none; background: white; padding: 20px; border: 1px solid #ccc; border-top: none; border-radius: 0 0 6px 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+    .tab-content.active { display: block; }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 25px; }
+    th, td { border: 1px solid #bbb; padding: 8px 12px; text-align: center; }
+    th { background-color: #f1f3f5; font-size: 14px; }
+    h2, h3 { color: #2c3e50; margin-top: 15px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+    
+    .download-btn { display: inline-block; padding: 4px 8px; background-color: #28a745; color: white; text-decoration: none; border-radius: 3px; font-size: 12px; }
+    .download-btn:hover { background-color: #218838; }
+  </style>
+</head>
+<body>
+
+  <h1>Radiological Safety Management System</h1>
+
+  <!-- Navigation Tabs -->
+  <div class="tab-container">
+    <button class="tab-button active" onclick="openTab(event, 'tab1')">TAB-1 (TLD)</button>
+    <button class="tab-button" onclick="openTab(event, 'tab2')">TAB-2 (Equipment)</button>
+    <button class="tab-button" onclick="openTab(event, 'tab3_aerb')">TAB-3 (AERB)</button>
+    <button class="tab-button" onclick="openTab(event, 'tab3_ssr')">TAB-3 (SSR Status)</button>
+    <button class="tab-button" onclick="openTab(event, 'tab4')">TAB-4 (Non-Compliance)</button>
+    <button class="tab-button" onclick="openTab(event, 'tab5')">TAB-5 (QA)</button>
+    <button class="tab-button" onclick="openTab(event, 'tab6')">TAB-6 (Academic)</button>
+    <button class="tab-button" onclick="openTab(event, 'tab7')">TAB-7 (Manuals)</button>
+    <button class="tab-button" onclick="openTab(event, 'tab8')">TAB-8 (Output Var.)</button>
+    <button class="tab-button" onclick="openTab(event, 'tab9')">TAB-9 (Machine Log)</button>
+  </div>
+
+  <!-- TAB 1 -->
+  <div id="tab1" class="tab-content active">
+    <h2>TAB-1 (TLD)</h2>
+    <table>
+      <thead>
+        <tr>
+          <th rowspan="2">S.no</th>
+          <th colspan="2">Radiotherapy</th>
+          <th colspan="2">Nuclear Medicine</th>
+          <th colspan="2">Diagnostic Radiology</th>
+        </tr>
+        <tr>
+          <th>Name</th><th>TLD No</th>
+          <th>Name</th><th>TLD No</th>
+          <th>Name</th><th>TLD No</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td>2</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td>3</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Attachment for TLD Report: Quarterly</h3>
+    <table>
+      <thead>
+        <tr><th>Date</th><th>Title</th><th>Attachment</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td></td>
+          <td>Quarterly Report</td>
+          <td><a href="attachments/TLD_Report.pdf" class="download-btn" download>Download PDF</a></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- TAB 2 -->
+  <div id="tab2" class="tab-content">
+    <h2>TAB-2 (List of Equipment)</h2>
+    <table>
+      <thead>
+        <tr>
+          <th colspan="4">Measuring Instrument</th>
+          <th colspan="4">Monitoring Instrument</th>
+        </tr>
+        <tr>
+          <th>Equip.Name</th><th>SL.No</th><th>Last Calib.Date</th><th>Due Calib.Date</th>
+          <th>Equip.Name</th><th>SL.No</th><th>Last Calib.Date</th><th>Due Calib.Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- TAB 3: AERB -->
+  <div id="tab3_aerb" class="tab-content">
+    <h2>TAB-3 (AERB Application)</h2>
+    <table>
+      <thead>
+        <tr><th>Date</th><th>Title</th><th>Category</th><th>Status</th><th>Description</th><th>Attachment</th></tr>
+      </thead>
+      <tbody>
+        <tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- TAB 3: SSR Status -->
+  <div id="tab3_ssr" class="tab-content">
+    <h2>TAB-3 (SSR / Equipment Function Status) - Once in 6 Months</h2>
+    <table>
+      <thead>
+        <tr><th>Date of Submission</th><th>Last Submission Date</th><th>Due Submission Date</th><th>Description</th><th>Attachment</th></tr>
+      </thead>
+      <tbody>
+        <tr><td></td><td></td><td></td><td></td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- TAB 4 -->
+  <div id="tab4" class="tab-content">
+    <h2>TAB-4 (Non-Compliance)</h2>
+    <table>
+      <thead>
+        <tr><th>Date</th><th>Title</th><th>Category</th><th>Due Date</th><th>Description</th><th>Attachment</th></tr>
+      </thead>
+      <tbody>
+        <tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- TAB 5 -->
+  <div id="tab5" class="tab-content">
+    <h2>TAB-5 (Quality Assurance)</h2>
+    <h3>Monthly QA-Linac</h3>
+    <table>
+      <thead><tr><th>Date</th><th>Title</th><th>Status</th><th>Attachment</th><th>Description</th></tr></thead>
+      <tbody><tr><td></td><td></td><td></td><td></td><td></td></tr></tbody>
+    </table>
+
+    <h3>Annual QA-Linac</h3>
+    <table>
+      <thead><tr><th>Date</th><th>Title</th><th>Status</th><th>Attachment</th><th>Description</th></tr></thead>
+      <tbody><tr><td></td><td></td><td></td><td></td><td></td></tr></tbody>
+    </table>
+
+    <h3>Brachytherapy QA</h3>
+    <table>
+      <thead><tr><th>Date</th><th>Title</th><th>Status</th><th>Attachment</th><th>Description</th></tr></thead>
+      <tbody><tr><td></td><td></td><td></td><td></td><td></td></tr></tbody>
+    </table>
+
+    <h3>Diagnostic QA</h3>
+    <table>
+      <thead><tr><th>Date</th><th>Title</th><th>Status</th><th>Attachment</th><th>Description</th></tr></thead>
+      <tbody><tr><td></td><td></td><td></td><td></td><td></td></tr></tbody>
+    </table>
+  </div>
+
+  <!-- TAB 6 -->
+  <div id="tab6" class="tab-content">
+    <h2>TAB-6 (Academic Activity)</h2>
+    <table>
+      <thead>
+        <tr><th>Date</th><th>Activity/Objective</th><th>Description</th><th>Due Date</th><th>Attachment</th></tr>
+      </thead>
+      <tbody><tr><td></td><td></td><td></td><td></td><td></td></tr></tbody>
+    </table>
+  </div>
+
+  <!-- TAB 7 -->
+  <div id="tab7" class="tab-content">
+    <h2>TAB-7 (Documents / Manuals)</h2>
+    <table>
+      <thead>
+        <tr><th>Sr.No</th><th>Title</th><th>Attachments</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td>Safety Manual</td><td><a href="attachments/Manual.pdf" class="download-btn" download>Download</a></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- TAB 8 -->
+  <div id="tab8" class="tab-content">
+    <h2>TAB-8 (Monthly Output Variation)</h2>
+    <table>
+      <thead>
+        <tr><th>Date</th><th>Title</th><th>Attachments</th></tr>
+      </thead>
+      <tbody><tr><td></td><td></td><td></td></tr></tbody>
+    </table>
+  </div>
+
+  <!-- TAB 9 -->
+  <div id="tab9" class="tab-content">
+    <h2>TAB-9 (Machine Log and Complaints)</h2>
+    <h3>Machine Log Maintenance</h3>
+    <table>
+      <thead>
+        <tr><th>Date</th><th>Title</th><th>Description</th></tr>
+      </thead>
+      <tbody><tr><td></td><td></td><td></td></tr></tbody>
+    </table>
+  </div>
+
+  <script>
+    function openTab(evt, tabId) {
+      var i, tabcontent, tabbuttons;
+      tabcontent = document.getElementsByClassName("tab-content");
+      for (i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].classList.remove("active");
+      }
+      tabbuttons = document.getElementsByClassName("tab-button");
+      for (i = 0; i < tabbuttons.length; i++) {
+        tabbuttons[i].classList.remove("active");
+      }
+      document.getElementById(tabId).classList.add("active");
+      evt.currentTarget.classList.add("active");
+    }
+  </script>
+
+</body>
+</html>
