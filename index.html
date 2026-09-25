@@ -4,9 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Radiological Safety & QA Portal</title>
+  <!-- html2pdf Library for Client-Side PDF Generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; margin: 20px; background-color: #f8f9fa; color: #333; }
-    h1 { text-align: center; color: #1a365d; }
+    h1 { text-align: center; color: #1a365d; margin-bottom: 5px; }
     
     .header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
     
@@ -17,6 +19,8 @@
 
     .tab-content { display: none; background: white; padding: 20px; border: 1px solid #ccc; border-top: none; border-radius: 0 0 6px 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
     .tab-content.active { display: block; }
+
+    .tab-export-bar { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px dashed #ddd; }
 
     table { width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 10px; }
     th, td { border: 1px solid #bbb; padding: 6px 10px; text-align: center; }
@@ -33,6 +37,11 @@
     .btn-delete:hover { background-color: #c82333; }
     .btn-save { background-color: #28a745; color: white; font-size: 15px; padding: 8px 16px; }
     .btn-save:hover { background-color: #218838; }
+
+    .btn-pdf { background-color: #d9534f; color: white; margin: 0; }
+    .btn-pdf:hover { background-color: #c9302c; }
+    .btn-word { background-color: #2b579a; color: white; margin: 0; }
+    .btn-word:hover { background-color: #1e3c6b; }
 
     .file-container { display: flex; align-items: center; justify-content: center; gap: 5px; }
     .file-download-btn {
@@ -66,6 +75,10 @@
 
   <!-- TAB 1 -->
   <div id="tab1" class="tab-content active">
+    <div class="tab-export-bar">
+      <button class="btn btn-pdf" onclick="exportTabToPDF('tab1', 'TAB-1_TLD_Report')">📄 Export PDF</button>
+      <button class="btn btn-word" onclick="exportTabToWord('tab1', 'TAB-1_TLD_Report')">📝 Export Word</button>
+    </div>
     <h2>TAB-1 (TLD Personnel Records)</h2>
     <table id="tldTable">
       <thead>
@@ -103,11 +116,7 @@
         <tr>
           <td><input type="date"></td>
           <td><input type="text" value="Quarterly Report"></td>
-          <td>
-            <div class="file-container">
-              <input type="file" onchange="handleFileUpload(this)">
-            </div>
-          </td>
+          <td><div class="file-container"><input type="file" onchange="handleFileUpload(this)"></div></td>
           <td><button class="btn btn-delete" onclick="deleteRow(this)">X</button></td>
         </tr>
       </tbody>
@@ -117,6 +126,10 @@
 
   <!-- TAB 2 -->
   <div id="tab2" class="tab-content">
+    <div class="tab-export-bar">
+      <button class="btn btn-pdf" onclick="exportTabToPDF('tab2', 'TAB-2_Equipment_Report')">📄 Export PDF</button>
+      <button class="btn btn-word" onclick="exportTabToWord('tab2', 'TAB-2_Equipment_Report')">📝 Export Word</button>
+    </div>
     <h2>TAB-2 (List of Equipment)</h2>
     <table id="equipTable">
       <thead>
@@ -143,6 +156,10 @@
 
   <!-- TAB 3: AERB -->
   <div id="tab3_aerb" class="tab-content">
+    <div class="tab-export-bar">
+      <button class="btn btn-pdf" onclick="exportTabToPDF('tab3_aerb', 'TAB-3_AERB_Report')">📄 Export PDF</button>
+      <button class="btn btn-word" onclick="exportTabToWord('tab3_aerb', 'TAB-3_AERB_Report')">📝 Export Word</button>
+    </div>
     <h2>TAB-3 (AERB Application)</h2>
     <table id="aerbTable">
       <thead>
@@ -161,6 +178,10 @@
 
   <!-- TAB 3: SSR Status -->
   <div id="tab3_ssr" class="tab-content">
+    <div class="tab-export-bar">
+      <button class="btn btn-pdf" onclick="exportTabToPDF('tab3_ssr', 'TAB-3_SSR_Report')">📄 Export PDF</button>
+      <button class="btn btn-word" onclick="exportTabToWord('tab3_ssr', 'TAB-3_SSR_Report')">📝 Export Word</button>
+    </div>
     <h2>TAB-3 (SSR / Equipment Function Status)</h2>
     <table id="ssrTable">
       <thead>
@@ -179,6 +200,10 @@
 
   <!-- TAB 4 -->
   <div id="tab4" class="tab-content">
+    <div class="tab-export-bar">
+      <button class="btn btn-pdf" onclick="exportTabToPDF('tab4', 'TAB-4_NonCompliance_Report')">📄 Export PDF</button>
+      <button class="btn btn-word" onclick="exportTabToWord('tab4', 'TAB-4_NonCompliance_Report')">📝 Export Word</button>
+    </div>
     <h2>TAB-4 (Non-Compliance)</h2>
     <table id="ncTable">
       <thead>
@@ -197,6 +222,10 @@
 
   <!-- TAB 5 -->
   <div id="tab5" class="tab-content">
+    <div class="tab-export-bar">
+      <button class="btn btn-pdf" onclick="exportTabToPDF('tab5', 'TAB-5_QA_Report')">📄 Export PDF</button>
+      <button class="btn btn-word" onclick="exportTabToWord('tab5', 'TAB-5_QA_Report')">📝 Export Word</button>
+    </div>
     <h2>TAB-5 (Quality Assurance)</h2>
     <h3>Linac / Brachy / Diagnostic QA Log</h3>
     <table id="qaTable">
@@ -215,6 +244,10 @@
 
   <!-- TAB 6 -->
   <div id="tab6" class="tab-content">
+    <div class="tab-export-bar">
+      <button class="btn btn-pdf" onclick="exportTabToPDF('tab6', 'TAB-6_Academic_Report')">📄 Export PDF</button>
+      <button class="btn btn-word" onclick="exportTabToWord('tab6', 'TAB-6_Academic_Report')">📝 Export Word</button>
+    </div>
     <h2>TAB-6 (Academic Activity)</h2>
     <table id="academicTable">
       <thead>
@@ -233,6 +266,10 @@
 
   <!-- TAB 7 -->
   <div id="tab7" class="tab-content">
+    <div class="tab-export-bar">
+      <button class="btn btn-pdf" onclick="exportTabToPDF('tab7', 'TAB-7_Manuals_Report')">📄 Export PDF</button>
+      <button class="btn btn-word" onclick="exportTabToWord('tab7', 'TAB-7_Manuals_Report')">📝 Export Word</button>
+    </div>
     <h2>TAB-7 (Documents & Manuals)</h2>
     <table id="manualsTable">
       <thead>
@@ -252,6 +289,10 @@
 
   <!-- TAB 8 -->
   <div id="tab8" class="tab-content">
+    <div class="tab-export-bar">
+      <button class="btn btn-pdf" onclick="exportTabToPDF('tab8', 'TAB-8_OutputVariation_Report')">📄 Export PDF</button>
+      <button class="btn btn-word" onclick="exportTabToWord('tab8', 'TAB-8_OutputVariation_Report')">📝 Export Word</button>
+    </div>
     <h2>TAB-8 (Monthly Output Variation)</h2>
     <table id="outputTable">
       <thead>
@@ -270,6 +311,10 @@
 
   <!-- TAB 9 -->
   <div id="tab9" class="tab-content">
+    <div class="tab-export-bar">
+      <button class="btn btn-pdf" onclick="exportTabToPDF('tab9', 'TAB-9_MachineLog_Report')">📄 Export PDF</button>
+      <button class="btn btn-word" onclick="exportTabToWord('tab9', 'TAB-9_MachineLog_Report')">📝 Export Word</button>
+    </div>
     <h2>TAB-9 (Machine Log and Complaints)</h2>
     <table id="logTable">
       <thead>
@@ -444,6 +489,84 @@
       } catch(e) {
         console.error("Could not load saved data", e);
       }
+    }
+
+    // Helper: Build clean HTML element without interactive UI controls for Export
+    function getCleanTabHTML(tabId) {
+      var originalTab = document.getElementById(tabId);
+      var clone = originalTab.cloneNode(true);
+
+      // Remove export bar and interactive action buttons
+      var elementsToRemove = clone.querySelectorAll('.tab-export-bar, .btn-add, .btn-delete, .btn-remove-file, input[type="file"]');
+      elementsToRemove.forEach(el => el.remove());
+
+      // Remove "Action" table header and column cells
+      var rows = clone.querySelectorAll('tr');
+      rows.forEach(tr => {
+        var lastCell = tr.lastElementChild;
+        if (lastCell && (lastCell.innerText.trim() === 'Action' || lastCell.querySelector('.btn-delete'))) {
+          lastCell.remove();
+        }
+      });
+
+      // Replace text and date inputs with plain text values
+      var inputs = clone.querySelectorAll('input[type="text"], input[type="date"]');
+      inputs.forEach(input => {
+        var textNode = document.createTextNode(input.value || '-');
+        input.parentNode.replaceChild(textNode, input);
+      });
+
+      // Clean up file buttons to show plain text filename
+      var fileBtns = clone.querySelectorAll('.file-download-btn');
+      fileBtns.forEach(a => {
+        var cleanName = document.createTextNode(a.innerText.replace('📥 ', 'Attached: '));
+        a.parentNode.replaceChild(cleanName, a);
+      });
+
+      return clone;
+    }
+
+    // Export Tab to Word Document (.doc)
+    function exportTabToWord(tabId, filename) {
+      var cleanElement = getCleanTabHTML(tabId);
+      var header = "<html xmlns:o='urn:schemas-microsoft-microsoft-com:office:office' " +
+                   "xmlns:w='urn:schemas-microsoft-microsoft-com:office:word' " +
+                   "xmlns='http://www.w3.org/TR/REC-html40'>" +
+                   "<head><meta charset='utf-8'><title>" + filename + "</title>" +
+                   "<style>" +
+                   "body { font-family: Arial, sans-serif; padding: 20px; }" +
+                   "h2, h3 { color: #1a365d; border-bottom: 2px solid #1a365d; padding-bottom: 5px; }" +
+                   "table { width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 20px; }" +
+                   "th, td { border: 1px solid #333; padding: 8px; text-align: center; font-size: 12px; }" +
+                   "th { background-color: #f2f2f2; font-weight: bold; }" +
+                   "</style></head><body>";
+      var footer = "</body></html>";
+      var html = header + cleanElement.innerHTML + footer;
+
+      var blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = filename + '.doc';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    // Export Tab to PDF Document (.pdf)
+    function exportTabToPDF(tabId, filename) {
+      var cleanElement = getCleanTabHTML(tabId);
+      
+      var opt = {
+        margin:       [0.5, 0.5, 0.5, 0.5],
+        filename:     filename + '.pdf',
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2 },
+        jsPDF:        { unit: 'in', format: 'letter', orientation: 'landscape' }
+      };
+
+      html2pdf().set(opt).from(cleanElement).save();
     }
 
     window.onload = function() {
