@@ -1,578 +1,1984 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Radiological Safety & QA Portal</title>
-  <!-- html2pdf Library for Client-Side PDF Generation -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; background-color: #f8f9fa; color: #333; }
-    h1 { text-align: center; color: #1a365d; margin-bottom: 5px; }
-    
-    .header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-    
-    .tab-container { display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 2px solid #0056b3; background: #e9ecef; padding: 5px 5px 0 5px; border-radius: 6px 6px 0 0; }
-    .tab-button { padding: 10px 16px; border: none; background: #dee2e6; cursor: pointer; font-weight: bold; border-radius: 4px 4px 0 0; transition: 0.2s; }
-    .tab-button:hover { background: #ced4da; }
-    .tab-button.active { background: #0056b3; color: white; }
+import React, { useState, useEffect } from 'react';
+import { Tab10PicketFence } from './components/Tab10PicketFence';
+import {
+  FileText,
+  FileSpreadsheet,
+  Save,
+  Plus,
+  Trash2,
+  Download,
+  X,
+  Shield,
+  Activity,
+  CheckCircle2,
+} from 'lucide-react';
 
-    .tab-content { display: none; background: white; padding: 20px; border: 1px solid #ccc; border-top: none; border-radius: 0 0 6px 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-    .tab-content.active { display: block; }
+interface FileAttachment {
+  fileName: string;
+  fileData: string;
+}
 
-    .tab-export-bar { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px dashed #ddd; }
+export default function App() {
+  const [activeTab, setActiveTab] = useState<string>('tab1');
+  const [saveToast, setSaveToast] = useState<string | null>(null);
 
-    table { width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 10px; }
-    th, td { border: 1px solid #bbb; padding: 6px 10px; text-align: center; }
-    th { background-color: #f1f3f5; font-size: 14px; }
-    
-    td input[type="text"], td input[type="date"] {
-      width: 95%; padding: 5px; border: 1px solid #ccc; border-radius: 3px; box-sizing: border-box;
-    }
-    
-    .btn { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 13px; margin-top: 5px; margin-bottom: 15px; }
-    .btn-add { background-color: #007bff; color: white; }
-    .btn-add:hover { background-color: #0056b3; }
-    .btn-delete { background-color: #dc3545; color: white; padding: 4px 8px; font-size: 12px; }
-    .btn-delete:hover { background-color: #c82333; }
-    .btn-save { background-color: #28a745; color: white; font-size: 15px; padding: 8px 16px; }
-    .btn-save:hover { background-color: #218838; }
+  // Tab 1 state
+  const [tldRows, setTldRows] = useState<any[]>([
+    {
+      id: '1',
+      rtName: '',
+      rtTld: '',
+      nmName: '',
+      nmTld: '',
+      drName: '',
+      drTld: '',
+    },
+  ]);
+  const [tldReportRows, setTldReportRows] = useState<any[]>([
+    {
+      id: '1',
+      date: new Date().toISOString().slice(0, 10),
+      title: 'Quarterly Report',
+      file: null as FileAttachment | null,
+    },
+  ]);
 
-    .btn-pdf { background-color: #d9534f; color: white; margin: 0; }
-    .btn-pdf:hover { background-color: #c9302c; }
-    .btn-word { background-color: #2b579a; color: white; margin: 0; }
-    .btn-word:hover { background-color: #1e3c6b; }
+  // Tab 2 state
+  const [equipRows, setEquipRows] = useState<any[]>([
+    {
+      id: '1',
+      measName: 'Ionization Chamber (Farmer 0.6cc)',
+      measSl: 'FC-65-G #1289',
+      measLastCalib: '2025-08-15',
+      measDueCalib: '2027-08-15',
+      monName: 'Radiation Survey Meter (Geiger-Müller)',
+      monSl: 'RAD-GM-402',
+      monLastCalib: '2025-11-10',
+      monDueCalib: '2026-11-10',
+    },
+  ]);
 
-    .file-container { display: flex; align-items: center; justify-content: center; gap: 5px; }
-    .file-download-btn {
-      display: inline-block; padding: 5px 10px; background-color: #17a2b8; color: white;
-      text-decoration: none; border-radius: 4px; font-size: 12px; font-weight: bold;
-    }
-    .file-download-btn:hover { background-color: #138496; }
-    .btn-remove-file { background-color: #6c757d; color: white; border: none; padding: 3px 6px; border-radius: 3px; cursor: pointer; font-size: 11px; }
-  </style>
-</head>
-<body>
+  // Tab 3 AERB state
+  const [aerbRows, setAerbRows] = useState<any[]>([
+    {
+      id: '1',
+      date: new Date().toISOString().slice(0, 10),
+      title: 'Halcyon Linac License Renewal',
+      category: 'Operation License',
+      status: 'In Review',
+      description: 'Submitted triennial license renewal application on e-LORA.',
+      file: null as FileAttachment | null,
+    },
+  ]);
 
-  <div class="header-actions">
-    <h1>Radiological Safety Management System</h1>
-    <button class="btn btn-save" onclick="saveData()">💾 Save All Changes</button>
-  </div>
+  // Tab 3 SSR state
+  const [ssrRows, setSsrRows] = useState<any[]>([
+    {
+      id: '1',
+      submissionDate: new Date().toISOString().slice(0, 10),
+      lastDate: '2025-06-30',
+      dueDate: '2026-06-30',
+      description: 'Annual Safety Status Report for Radiotherapy department',
+      file: null as FileAttachment | null,
+    },
+  ]);
 
-  <!-- Navigation Tabs -->
-  <div class="tab-container">
-    <button class="tab-button active" onclick="openTab(event, 'tab1')">TAB-1 (TLD)</button>
-    <button class="tab-button" onclick="openTab(event, 'tab2')">TAB-2 (Equipment)</button>
-    <button class="tab-button" onclick="openTab(event, 'tab3_aerb')">TAB-3 (AERB)</button>
-    <button class="tab-button" onclick="openTab(event, 'tab3_ssr')">TAB-3 (SSR Status)</button>
-    <button class="tab-button" onclick="openTab(event, 'tab4')">TAB-4 (Non-Compliance)</button>
-    <button class="tab-button" onclick="openTab(event, 'tab5')">TAB-5 (QA)</button>
-    <button class="tab-button" onclick="openTab(event, 'tab6')">TAB-6 (Academic)</button>
-    <button class="tab-button" onclick="openTab(event, 'tab7')">TAB-7 (Manuals)</button>
-    <button class="tab-button" onclick="openTab(event, 'tab8')">TAB-8 (Output Var.)</button>
-    <button class="tab-button" onclick="openTab(event, 'tab9')">TAB-9 (Machine Log)</button>
-  </div>
+  // Tab 4 state
+  const [ncRows, setNcRows] = useState<any[]>([
+    {
+      id: '1',
+      date: new Date().toISOString().slice(0, 10),
+      title: 'Warning Signage Replacement',
+      category: 'Radiation Safety',
+      dueDate: '2026-10-15',
+      description: 'Illuminated Beam-ON sign outside Halcyon bunker maze replaced bulb.',
+      file: null as FileAttachment | null,
+    },
+  ]);
 
-  <!-- TAB 1 -->
-  <div id="tab1" class="tab-content active">
-    <div class="tab-export-bar">
-      <button class="btn btn-pdf" onclick="exportTabToPDF('tab1', 'TAB-1_TLD_Report')">📄 Export PDF</button>
-      <button class="btn btn-word" onclick="exportTabToWord('tab1', 'TAB-1_TLD_Report')">📝 Export Word</button>
-    </div>
-    <h2>TAB-1 (TLD Personnel Records)</h2>
-    <table id="tldTable">
-      <thead>
-        <tr>
-          <th rowspan="2">S.No</th>
-          <th colspan="2">Radiotherapy</th>
-          <th colspan="2">Nuclear Medicine</th>
-          <th colspan="2">Diagnostic Radiology</th>
-          <th rowspan="2">Action</th>
-        </tr>
-        <tr>
-          <th>Name</th><th>TLD No</th>
-          <th>Name</th><th>TLD No</th>
-          <th>Name</th><th>TLD No</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>1</td>
-          <td><input type="text"></td><td><input type="text"></td>
-          <td><input type="text"></td><td><input type="text"></td>
-          <td><input type="text"></td><td><input type="text"></td>
-          <td><button class="btn btn-delete" onclick="deleteRow(this)">X</button></td>
-        </tr>
-      </tbody>
-    </table>
-    <button class="btn btn-add" onclick="addTldRow('tldTable')">+ Add Personnel Row</button>
+  // Tab 5 QA state
+  const [qaRows, setQaRows] = useState<any[]>([
+    {
+      id: '1',
+      date: new Date().toISOString().slice(0, 10),
+      title: 'Halcyon Linac Daily / Weekly QA',
+      status: 'PASS',
+      file: null as FileAttachment | null,
+      description: 'Laser alignment, optical distance indicator, and beam output within ±1.5%.',
+    },
+  ]);
 
-    <h3>Attachment for TLD Report: Quarterly</h3>
-    <table id="tldReportTable">
-      <thead>
-        <tr><th>Date</th><th>Title</th><th>Attachment File</th><th>Action</th></tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td><input type="date"></td>
-          <td><input type="text" value="Quarterly Report"></td>
-          <td><div class="file-container"><input type="file" onchange="handleFileUpload(this)"></div></td>
-          <td><button class="btn btn-delete" onclick="deleteRow(this)">X</button></td>
-        </tr>
-      </tbody>
-    </table>
-    <button class="btn btn-add" onclick="addGenericRow('tldReportTable', ['date', 'text', 'file'])">+ Add Report Row</button>
-  </div>
+  // Tab 6 Academic state
+  const [academicRows, setAcademicRows] = useState<any[]>([
+    {
+      id: '1',
+      date: new Date().toISOString().slice(0, 10),
+      activity: 'Radiation Safety Refresher Seminar',
+      description: 'Annual emergency procedures training for radiotherapy technologists and medical physicists.',
+      dueDate: '2026-11-30',
+      file: null as FileAttachment | null,
+    },
+  ]);
 
-  <!-- TAB 2 -->
-  <div id="tab2" class="tab-content">
-    <div class="tab-export-bar">
-      <button class="btn btn-pdf" onclick="exportTabToPDF('tab2', 'TAB-2_Equipment_Report')">📄 Export PDF</button>
-      <button class="btn btn-word" onclick="exportTabToWord('tab2', 'TAB-2_Equipment_Report')">📝 Export Word</button>
-    </div>
-    <h2>TAB-2 (List of Equipment)</h2>
-    <table id="equipTable">
-      <thead>
-        <tr>
-          <th colspan="4">Measuring Instrument</th>
-          <th colspan="4">Monitoring Instrument</th>
-          <th rowspan="2">Action</th>
-        </tr>
-        <tr>
-          <th>Equip Name</th><th>SL.No</th><th>Last Calib</th><th>Due Calib</th>
-          <th>Equip Name</th><th>SL.No</th><th>Last Calib</th><th>Due Calib</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td><input type="text"></td><td><input type="text"></td><td><input type="date"></td><td><input type="date"></td>
-          <td><input type="text"></td><td><input type="text"></td><td><input type="date"></td><td><input type="date"></td>
-          <td><button class="btn btn-delete" onclick="deleteRow(this)">X</button></td>
-        </tr>
-      </tbody>
-    </table>
-    <button class="btn btn-add" onclick="addEquipRow('equipTable')">+ Add Equipment Row</button>
-  </div>
+  // Tab 7 Manuals state
+  const [manualRows, setManualRows] = useState<any[]>([
+    {
+      id: '1',
+      title: 'Radiation Safety Manual (Hospital RSO SOP)',
+      file: null as FileAttachment | null,
+    },
+    {
+      id: '2',
+      title: 'Varian Halcyon Linear Accelerator Operation & Safety Guide',
+      file: null as FileAttachment | null,
+    },
+  ]);
 
-  <!-- TAB 3: AERB -->
-  <div id="tab3_aerb" class="tab-content">
-    <div class="tab-export-bar">
-      <button class="btn btn-pdf" onclick="exportTabToPDF('tab3_aerb', 'TAB-3_AERB_Report')">📄 Export PDF</button>
-      <button class="btn btn-word" onclick="exportTabToWord('tab3_aerb', 'TAB-3_AERB_Report')">📝 Export Word</button>
-    </div>
-    <h2>TAB-3 (AERB Application)</h2>
-    <table id="aerbTable">
-      <thead>
-        <tr><th>Date</th><th>Title</th><th>Category</th><th>Status</th><th>Description</th><th>Attachment</th><th>Action</th></tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td><input type="date"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td>
-          <td><div class="file-container"><input type="file" onchange="handleFileUpload(this)"></div></td>
-          <td><button class="btn btn-delete" onclick="deleteRow(this)">X</button></td>
-        </tr>
-      </tbody>
-    </table>
-    <button class="btn btn-add" onclick="addGenericRow('aerbTable', ['date', 'text', 'text', 'text', 'text', 'file'])">+ Add AERB Row</button>
-  </div>
+  // Tab 8 Output Variation state
+  const [outputRows, setOutputRows] = useState<any[]>([
+    {
+      id: '1',
+      date: new Date().toISOString().slice(0, 10),
+      title: 'Halcyon 6X-FFF Monthly Output Verification',
+      file: null as FileAttachment | null,
+    },
+  ]);
 
-  <!-- TAB 3: SSR Status -->
-  <div id="tab3_ssr" class="tab-content">
-    <div class="tab-export-bar">
-      <button class="btn btn-pdf" onclick="exportTabToPDF('tab3_ssr', 'TAB-3_SSR_Report')">📄 Export PDF</button>
-      <button class="btn btn-word" onclick="exportTabToWord('tab3_ssr', 'TAB-3_SSR_Report')">📝 Export Word</button>
-    </div>
-    <h2>TAB-3 (SSR / Equipment Function Status)</h2>
-    <table id="ssrTable">
-      <thead>
-        <tr><th>Date of Submission</th><th>Last Submission Date</th><th>Due Submission Date</th><th>Description</th><th>Attachment</th><th>Action</th></tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td><input type="date"></td><td><input type="date"></td><td><input type="date"></td><td><input type="text"></td>
-          <td><div class="file-container"><input type="file" onchange="handleFileUpload(this)"></div></td>
-          <td><button class="btn btn-delete" onclick="deleteRow(this)">X</button></td>
-        </tr>
-      </tbody>
-    </table>
-    <button class="btn btn-add" onclick="addGenericRow('ssrTable', ['date', 'date', 'date', 'text', 'file'])">+ Add SSR Row</button>
-  </div>
+  // Tab 9 Log state
+  const [logRows, setLogRows] = useState<any[]>([
+    {
+      id: '1',
+      date: new Date().toISOString().slice(0, 10),
+      machine: 'Halcyon-01',
+      issue: 'Routine gantry angle calibration check - verified nominal at 0, 90, 180, 270 deg.',
+      file: null as FileAttachment | null,
+    },
+  ]);
 
-  <!-- TAB 4 -->
-  <div id="tab4" class="tab-content">
-    <div class="tab-export-bar">
-      <button class="btn btn-pdf" onclick="exportTabToPDF('tab4', 'TAB-4_NonCompliance_Report')">📄 Export PDF</button>
-      <button class="btn btn-word" onclick="exportTabToWord('tab4', 'TAB-4_NonCompliance_Report')">📝 Export Word</button>
-    </div>
-    <h2>TAB-4 (Non-Compliance)</h2>
-    <table id="ncTable">
-      <thead>
-        <tr><th>Date</th><th>Title</th><th>Category</th><th>Due Date</th><th>Description</th><th>Attachment</th><th>Action</th></tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td><input type="date"></td><td><input type="text"></td><td><input type="text"></td><td><input type="date"></td><td><input type="text"></td>
-          <td><div class="file-container"><input type="file" onchange="handleFileUpload(this)"></div></td>
-          <td><button class="btn btn-delete" onclick="deleteRow(this)">X</button></td>
-        </tr>
-      </tbody>
-    </table>
-    <button class="btn btn-add" onclick="addGenericRow('ncTable', ['date', 'text', 'text', 'date', 'text', 'file'])">+ Add Non-Compliance Row</button>
-  </div>
+  // Tab 10 Picket fence state
+  const [picketFenceState, setPicketFenceState] = useState<any>(null);
 
-  <!-- TAB 5 -->
-  <div id="tab5" class="tab-content">
-    <div class="tab-export-bar">
-      <button class="btn btn-pdf" onclick="exportTabToPDF('tab5', 'TAB-5_QA_Report')">📄 Export PDF</button>
-      <button class="btn btn-word" onclick="exportTabToWord('tab5', 'TAB-5_QA_Report')">📝 Export Word</button>
-    </div>
-    <h2>TAB-5 (Quality Assurance)</h2>
-    <h3>Linac / Brachy / Diagnostic QA Log</h3>
-    <table id="qaTable">
-      <thead><tr><th>Date</th><th>Title / Machine</th><th>Status</th><th>Attachment</th><th>Description</th><th>Action</th></tr></thead>
-      <tbody>
-        <tr>
-          <td><input type="date"></td><td><input type="text"></td><td><input type="text"></td>
-          <td><div class="file-container"><input type="file" onchange="handleFileUpload(this)"></div></td>
-          <td><input type="text"></td>
-          <td><button class="btn btn-delete" onclick="deleteRow(this)">X</button></td>
-        </tr>
-      </tbody>
-    </table>
-    <button class="btn btn-add" onclick="addGenericRow('qaTable', ['date', 'text', 'text', 'file', 'text'])">+ Add QA Entry</button>
-  </div>
-
-  <!-- TAB 6 -->
-  <div id="tab6" class="tab-content">
-    <div class="tab-export-bar">
-      <button class="btn btn-pdf" onclick="exportTabToPDF('tab6', 'TAB-6_Academic_Report')">📄 Export PDF</button>
-      <button class="btn btn-word" onclick="exportTabToWord('tab6', 'TAB-6_Academic_Report')">📝 Export Word</button>
-    </div>
-    <h2>TAB-6 (Academic Activity)</h2>
-    <table id="academicTable">
-      <thead>
-        <tr><th>Date</th><th>Activity / Objective</th><th>Description</th><th>Due Date</th><th>Attachment</th><th>Action</th></tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td><input type="date"></td><td><input type="text"></td><td><input type="text"></td><td><input type="date"></td>
-          <td><div class="file-container"><input type="file" onchange="handleFileUpload(this)"></div></td>
-          <td><button class="btn btn-delete" onclick="deleteRow(this)">X</button></td>
-        </tr>
-      </tbody>
-    </table>
-    <button class="btn btn-add" onclick="addGenericRow('academicTable', ['date', 'text', 'text', 'date', 'file'])">+ Add Academic Entry</button>
-  </div>
-
-  <!-- TAB 7 -->
-  <div id="tab7" class="tab-content">
-    <div class="tab-export-bar">
-      <button class="btn btn-pdf" onclick="exportTabToPDF('tab7', 'TAB-7_Manuals_Report')">📄 Export PDF</button>
-      <button class="btn btn-word" onclick="exportTabToWord('tab7', 'TAB-7_Manuals_Report')">📝 Export Word</button>
-    </div>
-    <h2>TAB-7 (Documents & Manuals)</h2>
-    <table id="manualsTable">
-      <thead>
-        <tr><th>Sr.No</th><th>Title</th><th>Attachment File</th><th>Action</th></tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>1</td>
-          <td><input type="text" value="Safety Manual"></td>
-          <td><div class="file-container"><input type="file" onchange="handleFileUpload(this)"></div></td>
-          <td><button class="btn btn-delete" onclick="deleteRow(this)">X</button></td>
-        </tr>
-      </tbody>
-    </table>
-    <button class="btn btn-add" onclick="addGenericRow('manualsTable', ['srno', 'text', 'file'])">+ Add Document</button>
-  </div>
-
-  <!-- TAB 8 -->
-  <div id="tab8" class="tab-content">
-    <div class="tab-export-bar">
-      <button class="btn btn-pdf" onclick="exportTabToPDF('tab8', 'TAB-8_OutputVariation_Report')">📄 Export PDF</button>
-      <button class="btn btn-word" onclick="exportTabToWord('tab8', 'TAB-8_OutputVariation_Report')">📝 Export Word</button>
-    </div>
-    <h2>TAB-8 (Monthly Output Variation)</h2>
-    <table id="outputTable">
-      <thead>
-        <tr><th>Date</th><th>Title</th><th>Attachment</th><th>Action</th></tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td><input type="date"></td><td><input type="text"></td>
-          <td><div class="file-container"><input type="file" onchange="handleFileUpload(this)"></div></td>
-          <td><button class="btn btn-delete" onclick="deleteRow(this)">X</button></td>
-        </tr>
-      </tbody>
-    </table>
-    <button class="btn btn-add" onclick="addGenericRow('outputTable', ['date', 'text', 'file'])">+ Add Output Record</button>
-  </div>
-
-  <!-- TAB 9 -->
-  <div id="tab9" class="tab-content">
-    <div class="tab-export-bar">
-      <button class="btn btn-pdf" onclick="exportTabToPDF('tab9', 'TAB-9_MachineLog_Report')">📄 Export PDF</button>
-      <button class="btn btn-word" onclick="exportTabToWord('tab9', 'TAB-9_MachineLog_Report')">📝 Export Word</button>
-    </div>
-    <h2>TAB-9 (Machine Log and Complaints)</h2>
-    <table id="logTable">
-      <thead>
-        <tr><th>Date</th><th>Title / Machine</th><th>Description / Issue</th><th>Attachment</th><th>Action</th></tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td><input type="date"></td><td><input type="text"></td><td><input type="text"></td>
-          <td><div class="file-container"><input type="file" onchange="handleFileUpload(this)"></div></td>
-          <td><button class="btn btn-delete" onclick="deleteRow(this)">X</button></td>
-        </tr>
-      </tbody>
-    </table>
-    <button class="btn btn-add" onclick="addGenericRow('logTable', ['date', 'text', 'text', 'file'])">+ Add Log Entry</button>
-  </div>
-
-  <script>
-    function openTab(evt, tabId) {
-      var i, tabcontent, tabbuttons;
-      tabcontent = document.getElementsByClassName("tab-content");
-      for (i = 0; i < tabcontent.length; i++) { tabcontent[i].classList.remove("active"); }
-      tabbuttons = document.getElementsByClassName("tab-button");
-      for (i = 0; i < tabbuttons.length; i++) { tabbuttons[i].classList.remove("active"); }
-      document.getElementById(tabId).classList.add("active");
-      evt.currentTarget.classList.add("active");
-    }
-
-    function deleteRow(btn) {
-      var row = btn.parentNode.parentNode;
-      row.parentNode.removeChild(row);
-    }
-
-    // File Attach & Instant Download Handler
-    function handleFileUpload(input) {
-      if (input.files && input.files[0]) {
-        var file = input.files[0];
-        var fileUrl = URL.createObjectURL(file);
-        var container = input.parentNode;
-        
-        var reader = new FileReader();
-        reader.onload = function(e) {
-          var base64Data = e.target.result;
-          container.setAttribute('data-file-data', base64Data);
-          container.setAttribute('data-file-name', file.name);
-
-          container.innerHTML = `
-            <a href="${fileUrl}" download="${file.name}" class="file-download-btn" title="Click to Download">📥 ${file.name}</a>
-            <button class="btn-remove-file" onclick="resetFileInput(this)" title="Remove file">✕</button>
-          `;
-        };
-        reader.readAsDataURL(file);
+  // Load saved state on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('rso_portal_data');
+      if (saved) {
+        const state = JSON.parse(saved);
+        if (state.tldRows) setTldRows(state.tldRows);
+        if (state.tldReportRows) setTldReportRows(state.tldReportRows);
+        if (state.equipRows) setEquipRows(state.equipRows);
+        if (state.aerbRows) setAerbRows(state.aerbRows);
+        if (state.ssrRows) setSsrRows(state.ssrRows);
+        if (state.ncRows) setNcRows(state.ncRows);
+        if (state.qaRows) setQaRows(state.qaRows);
+        if (state.academicRows) setAcademicRows(state.academicRows);
+        if (state.manualRows) setManualRows(state.manualRows);
+        if (state.outputRows) setOutputRows(state.outputRows);
+        if (state.logRows) setLogRows(state.logRows);
+        if (state.picketFenceData) setPicketFenceState(state.picketFenceData);
       }
+    } catch (e) {
+      console.error('Error loading saved data', e);
     }
+  }, []);
 
-    function resetFileInput(btn) {
-      var container = btn.parentNode;
-      container.removeAttribute('data-file-data');
-      container.removeAttribute('data-file-name');
-      container.innerHTML = `<input type="file" onchange="handleFileUpload(this)">`;
-    }
+  const triggerToast = (msg: string) => {
+    setSaveToast(msg);
+    setTimeout(() => setSaveToast(null), 3500);
+  };
 
-    function addTldRow(tableId) {
-      var table = document.getElementById(tableId).getElementsByTagName('tbody')[0];
-      var rowCount = table.rows.length + 1;
-      var newRow = table.insertRow();
-      newRow.innerHTML = `<td>${rowCount}</td>
-        <td><input type="text"></td><td><input type="text"></td>
-        <td><input type="text"></td><td><input type="text"></td>
-        <td><input type="text"></td><td><input type="text"></td>
-        <td><button class="btn btn-delete" onclick="deleteRow(this)">X</button></td>`;
-    }
-
-    function addEquipRow(tableId) {
-      var table = document.getElementById(tableId).getElementsByTagName('tbody')[0];
-      var newRow = table.insertRow();
-      newRow.innerHTML = `
-        <td><input type="text"></td><td><input type="text"></td><td><input type="date"></td><td><input type="date"></td>
-        <td><input type="text"></td><td><input type="text"></td><td><input type="date"></td><td><input type="date"></td>
-        <td><button class="btn btn-delete" onclick="deleteRow(this)">X</button></td>`;
-    }
-
-    function addGenericRow(tableId, colTypes) {
-      var table = document.getElementById(tableId).getElementsByTagName('tbody')[0];
-      var newRow = table.insertRow();
-      var html = '';
-      colTypes.forEach(type => {
-        if (type === 'srno') {
-          html += `<td>${table.rows.length}</td>`;
-        } else if (type === 'date') {
-          html += `<td><input type="date"></td>`;
-        } else if (type === 'text') {
-          html += `<td><input type="text"></td>`;
-        } else if (type === 'file') {
-          html += `<td><div class="file-container"><input type="file" onchange="handleFileUpload(this)"></div></td>`;
-        }
-      });
-      html += `<td><button class="btn btn-delete" onclick="deleteRow(this)">X</button></td>`;
-      newRow.innerHTML = html;
-    }
-
-    function saveData() {
-      var state = {};
-      var tables = document.querySelectorAll('table');
-      tables.forEach(function(table) {
-        var id = table.id;
-        if (!id) return;
-        var rows = [];
-        table.querySelectorAll('tbody tr').forEach(function(tr) {
-          var rowData = [];
-          tr.querySelectorAll('td').forEach(function(td) {
-            var input = td.querySelector('input[type="text"], input[type="date"]');
-            var fileContainer = td.querySelector('.file-container');
-            if (input) {
-              rowData.push({ type: 'input', value: input.value });
-            } else if (fileContainer) {
-              var fileData = fileContainer.getAttribute('data-file-data');
-              var fileName = fileContainer.getAttribute('data-file-name');
-              rowData.push({ type: 'file', fileName: fileName || null, fileData: fileData || null });
-            } else {
-              rowData.push({ type: 'text', value: td.innerText.trim() });
-            }
-          });
-          rows.push(rowData);
-        });
-        state[id] = rows;
-      });
-      localStorage.setItem('rso_portal_data', JSON.stringify(state));
-      alert("✅ All changes and attached files saved to your browser local storage!");
-    }
-
-    function loadSavedData() {
-      var saved = localStorage.getItem('rso_portal_data');
-      if (!saved) return;
-      try {
-        var state = JSON.parse(saved);
-        Object.keys(state).forEach(function(tableId) {
-          var table = document.getElementById(tableId);
-          if (!table) return;
-          var tbody = table.querySelector('tbody');
-          var savedRows = state[tableId];
-          if (!savedRows || savedRows.length === 0) return;
-          
-          tbody.innerHTML = '';
-          savedRows.forEach(function(rowData) {
-            var tr = document.createElement('tr');
-            rowData.forEach(function(col) {
-              var td = document.createElement('td');
-              if (col.type === 'input') {
-                td.innerHTML = `<input type="text" value="${col.value || ''}">`;
-              } else if (col.type === 'file') {
-                if (col.fileData && col.fileName) {
-                  td.innerHTML = `
-                    <div class="file-container" data-file-data="${col.fileData}" data-file-name="${col.fileName}">
-                      <a href="${col.fileData}" download="${col.fileName}" class="file-download-btn">📥 ${col.fileName}</a>
-                      <button class="btn-remove-file" onclick="resetFileInput(this)">✕</button>
-                    </div>`;
-                } else {
-                  td.innerHTML = `<div class="file-container"><input type="file" onchange="handleFileUpload(this)"></div>`;
-                }
-              } else if (col.type === 'text') {
-                if (col.value === 'X') {
-                  td.innerHTML = `<button class="btn btn-delete" onclick="deleteRow(this)">X</button>`;
-                } else {
-                  td.innerText = col.value;
-                }
-              }
-              tr.appendChild(td);
-            });
-            tbody.appendChild(tr);
-          });
-        });
-      } catch(e) {
-        console.error("Could not load saved data", e);
-      }
-    }
-
-    // Helper: Build clean HTML element without interactive UI controls for Export
-    function getCleanTabHTML(tabId) {
-      var originalTab = document.getElementById(tabId);
-      var clone = originalTab.cloneNode(true);
-
-      // Remove export bar and interactive action buttons
-      var elementsToRemove = clone.querySelectorAll('.tab-export-bar, .btn-add, .btn-delete, .btn-remove-file, input[type="file"]');
-      elementsToRemove.forEach(el => el.remove());
-
-      // Remove "Action" table header and column cells
-      var rows = clone.querySelectorAll('tr');
-      rows.forEach(tr => {
-        var lastCell = tr.lastElementChild;
-        if (lastCell && (lastCell.innerText.trim() === 'Action' || lastCell.querySelector('.btn-delete'))) {
-          lastCell.remove();
-        }
-      });
-
-      // Replace text and date inputs with plain text values
-      var inputs = clone.querySelectorAll('input[type="text"], input[type="date"]');
-      inputs.forEach(input => {
-        var textNode = document.createTextNode(input.value || '-');
-        input.parentNode.replaceChild(textNode, input);
-      });
-
-      // Clean up file buttons to show plain text filename
-      var fileBtns = clone.querySelectorAll('.file-download-btn');
-      fileBtns.forEach(a => {
-        var cleanName = document.createTextNode(a.innerText.replace('📥 ', 'Attached: '));
-        a.parentNode.replaceChild(cleanName, a);
-      });
-
-      return clone;
-    }
-
-    // Export Tab to Word Document (.doc)
-    function exportTabToWord(tabId, filename) {
-      var cleanElement = getCleanTabHTML(tabId);
-      var header = "<html xmlns:o='urn:schemas-microsoft-microsoft-com:office:office' " +
-                   "xmlns:w='urn:schemas-microsoft-microsoft-com:office:word' " +
-                   "xmlns='http://www.w3.org/TR/REC-html40'>" +
-                   "<head><meta charset='utf-8'><title>" + filename + "</title>" +
-                   "<style>" +
-                   "body { font-family: Arial, sans-serif; padding: 20px; }" +
-                   "h2, h3 { color: #1a365d; border-bottom: 2px solid #1a365d; padding-bottom: 5px; }" +
-                   "table { width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 20px; }" +
-                   "th, td { border: 1px solid #333; padding: 8px; text-align: center; font-size: 12px; }" +
-                   "th { background-color: #f2f2f2; font-weight: bold; }" +
-                   "</style></head><body>";
-      var footer = "</body></html>";
-      var html = header + cleanElement.innerHTML + footer;
-
-      var blob = new Blob(['\ufeff', html], { type: 'application/msword' });
-      var url = URL.createObjectURL(blob);
-      var a = document.createElement('a');
-      a.href = url;
-      a.download = filename + '.doc';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }
-
-    // Export Tab to PDF Document (.pdf)
-    function exportTabToPDF(tabId, filename) {
-      var cleanElement = getCleanTabHTML(tabId);
-      
-      var opt = {
-        margin:       [0.5, 0.5, 0.5, 0.5],
-        filename:     filename + '.pdf',
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2 },
-        jsPDF:        { unit: 'in', format: 'letter', orientation: 'landscape' }
+  // Save all changes to local storage
+  const handleSaveAll = () => {
+    try {
+      const fullState = {
+        tldRows,
+        tldReportRows,
+        equipRows,
+        aerbRows,
+        ssrRows,
+        ncRows,
+        qaRows,
+        academicRows,
+        manualRows,
+        outputRows,
+        logRows,
+        picketFenceData: picketFenceState,
       };
-
-      html2pdf().set(opt).from(cleanElement).save();
+      localStorage.setItem('rso_portal_data', JSON.stringify(fullState));
+      triggerToast('✅ All portal records & Picket Fence settings saved to local storage!');
+    } catch (e) {
+      alert('Error saving data: LocalStorage might be full due to file attachments.');
     }
+  };
 
-    window.onload = function() {
-      loadSavedData();
+  // File handler helper
+  const processFileUpload = (file: File, callback: (att: FileAttachment) => void) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const base64Data = e.target?.result as string;
+      callback({
+        fileName: file.name,
+        fileData: base64Data,
+      });
+      triggerToast(`Attached: ${file.name}`);
     };
-  </script>
+    reader.readAsDataURL(file);
+  };
 
-</body>
-</html>
+  // Add Picket Fence test to Tab 5 QA log
+  const handleAddPicketFenceToQA = (qaEntry: {
+    date: string;
+    machine: string;
+    status: string;
+    description: string;
+  }) => {
+    const newEntry = {
+      id: Date.now().toString(),
+      date: qaEntry.date,
+      title: qaEntry.machine,
+      status: qaEntry.status,
+      file: null,
+      description: qaEntry.description,
+    };
+    setQaRows(prev => [newEntry, ...prev]);
+    triggerToast('Added test to TAB-5 (QA Log)!');
+  };
+
+  // Export Tab to Word
+  const exportTabToWord = (tabId: string, filename: string) => {
+    const tabEl = document.getElementById(tabId);
+    if (!tabEl) return;
+
+    const clone = tabEl.cloneNode(true) as HTMLElement;
+    // Remove export buttons and add/delete buttons
+    clone.querySelectorAll('.tab-export-bar, .btn-add, .btn-delete, .btn-remove-file, input[type="file"]').forEach(el => el.remove());
+
+    // Clean inputs into static text
+    clone.querySelectorAll('input[type="text"], input[type="date"]').forEach(input => {
+      const inp = input as HTMLInputElement;
+      const text = document.createTextNode(inp.value || '-');
+      inp.parentNode?.replaceChild(text, inp);
+    });
+
+    // Remove action column headers & cells
+    clone.querySelectorAll('tr').forEach(tr => {
+      const lastCell = tr.lastElementChild;
+      if (lastCell && (lastCell.textContent?.trim() === 'Action' || lastCell.querySelector('button'))) {
+        lastCell.remove();
+      }
+    });
+
+    const header = `
+      <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+      <head><meta charset='utf-8'><title>${filename}</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 20px; color: #1e293b; }
+        h1, h2, h3 { color: #1a365d; border-bottom: 2px solid #1a365d; padding-bottom: 5px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 20px; font-size: 12px; }
+        th, td { border: 1px solid #475569; padding: 8px; text-align: center; }
+        th { background-color: #f1f5f9; font-weight: bold; }
+      </style></head><body>`;
+    const footer = '</body></html>';
+    const html = header + clone.innerHTML + footer;
+
+    const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${filename}.doc`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    triggerToast(`Exported ${filename}.doc`);
+  };
+
+  // Export Tab to PDF
+  const exportTabToPDF = (tabId: string, filename: string) => {
+    const tabEl = document.getElementById(tabId);
+    if (!tabEl) return;
+
+    const clone = tabEl.cloneNode(true) as HTMLElement;
+    clone.querySelectorAll('.tab-export-bar, .btn-add, .btn-delete, .btn-remove-file, input[type="file"]').forEach(el => el.remove());
+
+    clone.querySelectorAll('input[type="text"], input[type="date"]').forEach(input => {
+      const inp = input as HTMLInputElement;
+      const text = document.createTextNode(inp.value || '-');
+      inp.parentNode?.replaceChild(text, inp);
+    });
+
+    clone.querySelectorAll('tr').forEach(tr => {
+      const lastCell = tr.lastElementChild;
+      if (lastCell && (lastCell.textContent?.trim() === 'Action' || lastCell.querySelector('button'))) {
+        lastCell.remove();
+      }
+    });
+
+    if (typeof (window as any).html2pdf === 'function') {
+      const opt = {
+        margin: [0.4, 0.4, 0.4, 0.4],
+        filename: `${filename}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' },
+      };
+      (window as any).html2pdf().set(opt).from(clone).save();
+      triggerToast(`Exporting ${filename}.pdf...`);
+    } else {
+      window.print();
+    }
+  };
+
+  return (
+    <div className="max-w-7xl mx-auto">
+      {/* Toast Notification */}
+      {saveToast && (
+        <div className="fixed top-4 right-4 z-50 bg-emerald-800 text-white px-4 py-2.5 rounded-lg shadow-xl text-sm flex items-center gap-2 border border-emerald-600 animate-in fade-in slide-in-from-top-3">
+          <CheckCircle2 className="w-4 h-4 text-emerald-300" />
+          <span>{saveToast}</span>
+        </div>
+      )}
+
+      {/* Main Header */}
+      <div className="header-actions">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-[#0056b3] text-white flex items-center justify-center font-bold shadow-sm">
+            <Shield className="w-6 h-6" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Radiological Safety Management System</h1>
+            <p className="text-xs text-slate-500 m-0">
+              Department of Radiation Oncology & Medical Physics · Quality Assurance & Compliance Portal
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <a
+            href="/radiological_safety_portal.html"
+            download="radiological_safety_portal.html"
+            className="btn bg-slate-700 hover:bg-slate-800 text-white shadow"
+            title="Download full standalone offline HTML file"
+          >
+            <Download className="w-4 h-4 inline mr-1" />
+            <span>Download HTML File</span>
+          </a>
+          <button className="btn btn-save shadow" onClick={handleSaveAll}>
+            <Save className="w-4 h-4 inline mr-1" />
+            <span>Save All Changes</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Navigation Tabs (TAB 1 to TAB 10) */}
+      <div className="tab-container">
+        <button
+          className={`tab-button ${activeTab === 'tab1' ? 'active' : ''}`}
+          onClick={() => setActiveTab('tab1')}
+        >
+          TAB-1 (TLD)
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'tab2' ? 'active' : ''}`}
+          onClick={() => setActiveTab('tab2')}
+        >
+          TAB-2 (Equipment)
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'tab3_aerb' ? 'active' : ''}`}
+          onClick={() => setActiveTab('tab3_aerb')}
+        >
+          TAB-3 (AERB)
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'tab3_ssr' ? 'active' : ''}`}
+          onClick={() => setActiveTab('tab3_ssr')}
+        >
+          TAB-3 (SSR Status)
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'tab4' ? 'active' : ''}`}
+          onClick={() => setActiveTab('tab4')}
+        >
+          TAB-4 (Non-Compliance)
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'tab5' ? 'active' : ''}`}
+          onClick={() => setActiveTab('tab5')}
+        >
+          TAB-5 (QA)
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'tab6' ? 'active' : ''}`}
+          onClick={() => setActiveTab('tab6')}
+        >
+          TAB-6 (Academic)
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'tab7' ? 'active' : ''}`}
+          onClick={() => setActiveTab('tab7')}
+        >
+          TAB-7 (Manuals)
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'tab8' ? 'active' : ''}`}
+          onClick={() => setActiveTab('tab8')}
+        >
+          TAB-8 (Output Var.)
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'tab9' ? 'active' : ''}`}
+          onClick={() => setActiveTab('tab9')}
+        >
+          TAB-9 (Machine Log)
+        </button>
+        {/* NEW TAB 10: Picket Fence Profile Analyzer */}
+        <button
+          className={`tab-button ${activeTab === 'tab10' ? 'active !bg-[#0070ba]' : '!bg-emerald-100 hover:!bg-emerald-200 !text-emerald-900 border border-emerald-300'}`}
+          onClick={() => setActiveTab('tab10')}
+          title="Halcyon & Linac MLC Picket Fence Profile Analyzer"
+        >
+          <Activity className="w-3.5 h-3.5 inline text-emerald-700" />
+          <span>TAB-10 (Picket Fence)</span>
+          <span className="text-[10px] bg-emerald-600 text-white px-1.5 py-0.2 rounded-full font-bold">QA</span>
+        </button>
+      </div>
+
+      {/* ================= TAB 1 ================= */}
+      <div id="tab1" className={`tab-content ${activeTab === 'tab1' ? 'active' : 'hidden'}`}>
+        <div className="tab-export-bar">
+          <button className="btn btn-pdf" onClick={() => exportTabToPDF('tab1', 'TAB-1_TLD_Report')}>
+            <FileText className="w-3.5 h-3.5" />
+            <span>Export PDF</span>
+          </button>
+          <button className="btn btn-word" onClick={() => exportTabToWord('tab1', 'TAB-1_TLD_Report')}>
+            <FileSpreadsheet className="w-3.5 h-3.5" />
+            <span>Export Word</span>
+          </button>
+        </div>
+        <h2 className="text-base font-bold text-[#1a365d] mb-2">TAB-1 (TLD Personnel Records)</h2>
+        <div className="overflow-x-auto">
+          <table className="portal-table" id="tldTable">
+            <thead>
+              <tr>
+                <th rowSpan={2} style={{ width: '50px' }}>S.No</th>
+                <th colSpan={2}>Radiotherapy</th>
+                <th colSpan={2}>Nuclear Medicine</th>
+                <th colSpan={2}>Diagnostic Radiology</th>
+                <th rowSpan={2} style={{ width: '60px' }}>Action</th>
+              </tr>
+              <tr>
+                <th>Name</th>
+                <th>TLD No</th>
+                <th>Name</th>
+                <th>TLD No</th>
+                <th>Name</th>
+                <th>TLD No</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tldRows.map((row, idx) => (
+                <tr key={row.id}>
+                  <td>{idx + 1}</td>
+                  <td>
+                    <input
+                      type="text"
+                      value={row.rtName}
+                      onChange={e => {
+                        const copy = [...tldRows];
+                        copy[idx].rtName = e.target.value;
+                        setTldRows(copy);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      value={row.rtTld}
+                      onChange={e => {
+                        const copy = [...tldRows];
+                        copy[idx].rtTld = e.target.value;
+                        setTldRows(copy);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      value={row.nmName}
+                      onChange={e => {
+                        const copy = [...tldRows];
+                        copy[idx].nmName = e.target.value;
+                        setTldRows(copy);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      value={row.nmTld}
+                      onChange={e => {
+                        const copy = [...tldRows];
+                        copy[idx].nmTld = e.target.value;
+                        setTldRows(copy);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      value={row.drName}
+                      onChange={e => {
+                        const copy = [...tldRows];
+                        copy[idx].drName = e.target.value;
+                        setTldRows(copy);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      value={row.drTld}
+                      onChange={e => {
+                        const copy = [...tldRows];
+                        copy[idx].drTld = e.target.value;
+                        setTldRows(copy);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <button
+                      className="btn btn-delete"
+                      onClick={() => setTldRows(tldRows.filter((_, i) => i !== idx))}
+                    >
+                      X
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <button
+          className="btn btn-add"
+          onClick={() =>
+            setTldRows([
+              ...tldRows,
+              {
+                id: Date.now().toString(),
+                rtName: '',
+                rtTld: '',
+                nmName: '',
+                nmTld: '',
+                drName: '',
+                drTld: '',
+              },
+            ])
+          }
+        >
+          <Plus className="w-3.5 h-3.5" />
+          <span>Add Personnel Row</span>
+        </button>
+
+        <h3 className="text-sm font-bold text-[#1a365d] mt-6 mb-2">Attachment for TLD Report: Quarterly</h3>
+        <div className="overflow-x-auto">
+          <table className="portal-table" id="tldReportTable">
+            <thead>
+              <tr>
+                <th style={{ width: '160px' }}>Date</th>
+                <th>Title</th>
+                <th>Attachment File</th>
+                <th style={{ width: '60px' }}>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tldReportRows.map((row, idx) => (
+                <tr key={row.id}>
+                  <td>
+                    <input
+                      type="date"
+                      value={row.date}
+                      onChange={e => {
+                        const copy = [...tldReportRows];
+                        copy[idx].date = e.target.value;
+                        setTldReportRows(copy);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      value={row.title}
+                      onChange={e => {
+                        const copy = [...tldReportRows];
+                        copy[idx].title = e.target.value;
+                        setTldReportRows(copy);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <div className="file-container">
+                      {row.file ? (
+                        <>
+                          <a
+                            href={row.file.fileData}
+                            download={row.file.fileName}
+                            className="file-download-btn"
+                            title="Click to Download"
+                          >
+                            <Download className="w-3 h-3 inline mr-1" />
+                            {row.file.fileName}
+                          </a>
+                          <button
+                            className="btn-remove-file"
+                            onClick={() => {
+                              const copy = [...tldReportRows];
+                              copy[idx].file = null;
+                              setTldReportRows(copy);
+                            }}
+                          >
+                            ✕
+                          </button>
+                        </>
+                      ) : (
+                        <input
+                          type="file"
+                          onChange={e => {
+                            if (e.target.files?.[0]) {
+                              processFileUpload(e.target.files[0], att => {
+                                const copy = [...tldReportRows];
+                                copy[idx].file = att;
+                                setTldReportRows(copy);
+                              });
+                            }
+                          }}
+                        />
+                      )}
+                    </div>
+                  </td>
+                  <td>
+                    <button
+                      className="btn btn-delete"
+                      onClick={() => setTldReportRows(tldReportRows.filter((_, i) => i !== idx))}
+                    >
+                      X
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <button
+          className="btn btn-add"
+          onClick={() =>
+            setTldReportRows([
+              ...tldReportRows,
+              {
+                id: Date.now().toString(),
+                date: new Date().toISOString().slice(0, 10),
+                title: 'Quarterly Report',
+                file: null,
+              },
+            ])
+          }
+        >
+          <Plus className="w-3.5 h-3.5" />
+          <span>Add Report Row</span>
+        </button>
+      </div>
+
+      {/* ================= TAB 2 ================= */}
+      <div id="tab2" className={`tab-content ${activeTab === 'tab2' ? 'active' : 'hidden'}`}>
+        <div className="tab-export-bar">
+          <button className="btn btn-pdf" onClick={() => exportTabToPDF('tab2', 'TAB-2_Equipment_Report')}>
+            <FileText className="w-3.5 h-3.5" />
+            <span>Export PDF</span>
+          </button>
+          <button className="btn btn-word" onClick={() => exportTabToWord('tab2', 'TAB-2_Equipment_Report')}>
+            <FileSpreadsheet className="w-3.5 h-3.5" />
+            <span>Export Word</span>
+          </button>
+        </div>
+        <h2 className="text-base font-bold text-[#1a365d] mb-2">TAB-2 (List of Equipment)</h2>
+        <div className="overflow-x-auto">
+          <table className="portal-table" id="equipTable">
+            <thead>
+              <tr>
+                <th colSpan={4}>Measuring Instrument</th>
+                <th colSpan={4}>Monitoring Instrument</th>
+                <th rowSpan={2} style={{ width: '60px' }}>Action</th>
+              </tr>
+              <tr>
+                <th>Equip Name</th>
+                <th>SL.No</th>
+                <th>Last Calib</th>
+                <th>Due Calib</th>
+                <th>Equip Name</th>
+                <th>SL.No</th>
+                <th>Last Calib</th>
+                <th>Due Calib</th>
+              </tr>
+            </thead>
+            <tbody>
+              {equipRows.map((row, idx) => (
+                <tr key={row.id}>
+                  <td>
+                    <input
+                      type="text"
+                      value={row.measName}
+                      onChange={e => {
+                        const copy = [...equipRows];
+                        copy[idx].measName = e.target.value;
+                        setEquipRows(copy);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      value={row.measSl}
+                      onChange={e => {
+                        const copy = [...equipRows];
+                        copy[idx].measSl = e.target.value;
+                        setEquipRows(copy);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="date"
+                      value={row.measLastCalib}
+                      onChange={e => {
+                        const copy = [...equipRows];
+                        copy[idx].measLastCalib = e.target.value;
+                        setEquipRows(copy);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="date"
+                      value={row.measDueCalib}
+                      onChange={e => {
+                        const copy = [...equipRows];
+                        copy[idx].measDueCalib = e.target.value;
+                        setEquipRows(copy);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      value={row.monName}
+                      onChange={e => {
+                        const copy = [...equipRows];
+                        copy[idx].monName = e.target.value;
+                        setEquipRows(copy);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      value={row.monSl}
+                      onChange={e => {
+                        const copy = [...equipRows];
+                        copy[idx].monSl = e.target.value;
+                        setEquipRows(copy);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="date"
+                      value={row.monLastCalib}
+                      onChange={e => {
+                        const copy = [...equipRows];
+                        copy[idx].monLastCalib = e.target.value;
+                        setEquipRows(copy);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="date"
+                      value={row.monDueCalib}
+                      onChange={e => {
+                        const copy = [...equipRows];
+                        copy[idx].monDueCalib = e.target.value;
+                        setEquipRows(copy);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <button
+                      className="btn btn-delete"
+                      onClick={() => setEquipRows(equipRows.filter((_, i) => i !== idx))}
+                    >
+                      X
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <button
+          className="btn btn-add"
+          onClick={() =>
+            setEquipRows([
+              ...equipRows,
+              {
+                id: Date.now().toString(),
+                measName: '',
+                measSl: '',
+                measLastCalib: '',
+                measDueCalib: '',
+                monName: '',
+                monSl: '',
+                monLastCalib: '',
+                monDueCalib: '',
+              },
+            ])
+          }
+        >
+          <Plus className="w-3.5 h-3.5" />
+          <span>Add Equipment Row</span>
+        </button>
+      </div>
+
+      {/* ================= TAB 3: AERB ================= */}
+      <div id="tab3_aerb" className={`tab-content ${activeTab === 'tab3_aerb' ? 'active' : 'hidden'}`}>
+        <div className="tab-export-bar">
+          <button className="btn btn-pdf" onClick={() => exportTabToPDF('tab3_aerb', 'TAB-3_AERB_Report')}>
+            <FileText className="w-3.5 h-3.5" />
+            <span>Export PDF</span>
+          </button>
+          <button className="btn btn-word" onClick={() => exportTabToWord('tab3_aerb', 'TAB-3_AERB_Report')}>
+            <FileSpreadsheet className="w-3.5 h-3.5" />
+            <span>Export Word</span>
+          </button>
+        </div>
+        <h2 className="text-base font-bold text-[#1a365d] mb-2">TAB-3 (AERB Application)</h2>
+        <div className="overflow-x-auto">
+          <table className="portal-table" id="aerbTable">
+            <thead>
+              <tr>
+                <th style={{ width: '130px' }}>Date</th>
+                <th>Title</th>
+                <th>Category</th>
+                <th style={{ width: '110px' }}>Status</th>
+                <th>Description</th>
+                <th>Attachment</th>
+                <th style={{ width: '60px' }}>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {aerbRows.map((row, idx) => (
+                <tr key={row.id}>
+                  <td>
+                    <input
+                      type="date"
+                      value={row.date}
+                      onChange={e => {
+                        const copy = [...aerbRows];
+                        copy[idx].date = e.target.value;
+                        setAerbRows(copy);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      value={row.title}
+                      onChange={e => {
+                        const copy = [...aerbRows];
+                        copy[idx].title = e.target.value;
+                        setAerbRows(copy);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      value={row.category}
+                      onChange={e => {
+                        const copy = [...aerbRows];
+                        copy[idx].category = e.target.value;
+                        setAerbRows(copy);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      value={row.status}
+                      onChange={e => {
+                        const copy = [...aerbRows];
+                        copy[idx].status = e.target.value;
+                        setAerbRows(copy);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      value={row.description}
+                      onChange={e => {
+                        const copy = [...aerbRows];
+                        copy[idx].description = e.target.value;
+                        setAerbRows(copy);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <div className="file-container">
+                      {row.file ? (
+                        <>
+                          <a
+                            href={row.file.fileData}
+                            download={row.file.fileName}
+                            className="file-download-btn"
+                          >
+                            <Download className="w-3 h-3 inline mr-1" />
+                            {row.file.fileName}
+                          </a>
+                          <button
+                            className="btn-remove-file"
+                            onClick={() => {
+                              const copy = [...aerbRows];
+                              copy[idx].file = null;
+                              setAerbRows(copy);
+                            }}
+                          >
+                            ✕
+                          </button>
+                        </>
+                      ) : (
+                        <input
+                          type="file"
+                          onChange={e => {
+                            if (e.target.files?.[0]) {
+                              processFileUpload(e.target.files[0], att => {
+                                const copy = [...aerbRows];
+                                copy[idx].file = att;
+                                setAerbRows(copy);
+                              });
+                            }
+                          }}
+                        />
+                      )}
+                    </div>
+                  </td>
+                  <td>
+                    <button
+                      className="btn btn-delete"
+                      onClick={() => setAerbRows(aerbRows.filter((_, i) => i !== idx))}
+                    >
+                      X
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <button
+          className="btn btn-add"
+          onClick={() =>
+            setAerbRows([
+              ...aerbRows,
+              {
+                id: Date.now().toString(),
+                date: new Date().toISOString().slice(0, 10),
+                title: '',
+                category: '',
+                status: 'Submitted',
+                description: '',
+                file: null,
+              },
+            ])
+          }
+        >
+          <Plus className="w-3.5 h-3.5" />
+          <span>Add AERB Row</span>
+        </button>
+      </div>
+
+      {/* ================= TAB 3: SSR Status ================= */}
+      <div id="tab3_ssr" className={`tab-content ${activeTab === 'tab3_ssr' ? 'active' : 'hidden'}`}>
+        <div className="tab-export-bar">
+          <button className="btn btn-pdf" onClick={() => exportTabToPDF('tab3_ssr', 'TAB-3_SSR_Report')}>
+            <FileText className="w-3.5 h-3.5" />
+            <span>Export PDF</span>
+          </button>
+          <button className="btn btn-word" onClick={() => exportTabToWord('tab3_ssr', 'TAB-3_SSR_Report')}>
+            <FileSpreadsheet className="w-3.5 h-3.5" />
+            <span>Export Word</span>
+          </button>
+        </div>
+        <h2 className="text-base font-bold text-[#1a365d] mb-2">TAB-3 (SSR / Equipment Function Status)</h2>
+        <div className="overflow-x-auto">
+          <table className="portal-table" id="ssrTable">
+            <thead>
+              <tr>
+                <th>Date of Submission</th>
+                <th>Last Submission Date</th>
+                <th>Due Submission Date</th>
+                <th>Description</th>
+                <th>Attachment</th>
+                <th style={{ width: '60px' }}>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ssrRows.map((row, idx) => (
+                <tr key={row.id}>
+                  <td>
+                    <input
+                      type="date"
+                      value={row.submissionDate}
+                      onChange={e => {
+                        const copy = [...ssrRows];
+                        copy[idx].submissionDate = e.target.value;
+                        setSsrRows(copy);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="date"
+                      value={row.lastDate}
+                      onChange={e => {
+                        const copy = [...ssrRows];
+                        copy[idx].lastDate = e.target.value;
+                        setSsrRows(copy);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="date"
+                      value={row.dueDate}
+                      onChange={e => {
+                        const copy = [...ssrRows];
+                        copy[idx].dueDate = e.target.value;
+                        setSsrRows(copy);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      value={row.description}
+                      onChange={e => {
+                        const copy = [...ssrRows];
+                        copy[idx].description = e.target.value;
+                        setSsrRows(copy);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <div className="file-container">
+                      {row.file ? (
+                        <>
+                          <a
+                            href={row.file.fileData}
+                            download={row.file.fileName}
+                            className="file-download-btn"
+                          >
+                            <Download className="w-3 h-3 inline mr-1" />
+                            {row.file.fileName}
+                          </a>
+                          <button
+                            className="btn-remove-file"
+                            onClick={() => {
+                              const copy = [...ssrRows];
+                              copy[idx].file = null;
+                              setSsrRows(copy);
+                            }}
+                          >
+                            ✕
+                          </button>
+                        </>
+                      ) : (
+                        <input
+                          type="file"
+                          onChange={e => {
+                            if (e.target.files?.[0]) {
+                              processFileUpload(e.target.files[0], att => {
+                                const copy = [...ssrRows];
+                                copy[idx].file = att;
+                                setSsrRows(copy);
+                              });
+                            }
+                          }}
+                        />
+                      )}
+                    </div>
+                  </td>
+                  <td>
+                    <button
+                      className="btn btn-delete"
+                      onClick={() => setSsrRows(ssrRows.filter((_, i) => i !== idx))}
+                    >
+                      X
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <button
+          className="btn btn-add"
+          onClick={() =>
+            setSsrRows([
+              ...ssrRows,
+              {
+                id: Date.now().toString(),
+                submissionDate: new Date().toISOString().slice(0, 10),
+                lastDate: '',
+                dueDate: '',
+                description: '',
+                file: null,
+              },
+            ])
+          }
+        >
+          <Plus className="w-3.5 h-3.5" />
+          <span>Add SSR Row</span>
+        </button>
+      </div>
+
+      {/* ================= TAB 4 ================= */}
+      <div id="tab4" className={`tab-content ${activeTab === 'tab4' ? 'active' : 'hidden'}`}>
+        <div className="tab-export-bar">
+          <button className="btn btn-pdf" onClick={() => exportTabToPDF('tab4', 'TAB-4_NonCompliance_Report')}>
+            <FileText className="w-3.5 h-3.5" />
+            <span>Export PDF</span>
+          </button>
+          <button className="btn btn-word" onClick={() => exportTabToWord('tab4', 'TAB-4_NonCompliance_Report')}>
+            <FileSpreadsheet className="w-3.5 h-3.5" />
+            <span>Export Word</span>
+          </button>
+        </div>
+        <h2 className="text-base font-bold text-[#1a365d] mb-2">TAB-4 (Non-Compliance)</h2>
+        <div className="overflow-x-auto">
+          <table className="portal-table" id="ncTable">
+            <thead>
+              <tr>
+                <th style={{ width: '130px' }}>Date</th>
+                <th>Title</th>
+                <th>Category</th>
+                <th style={{ width: '130px' }}>Due Date</th>
+                <th>Description</th>
+                <th>Attachment</th>
+                <th style={{ width: '60px' }}>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ncRows.map((row, idx) => (
+                <tr key={row.id}>
+                  <td>
+                    <input
+                      type="date"
+                      value={row.date}
+                      onChange={e => {
+                        const copy = [...ncRows];
+                        copy[idx].date = e.target.value;
+                        setNcRows(copy);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      value={row.title}
+                      onChange={e => {
+                        const copy = [...ncRows];
+                        copy[idx].title = e.target.value;
+                        setNcRows(copy);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      value={row.category}
+                      onChange={e => {
+                        const copy = [...ncRows];
+                        copy[idx].category = e.target.value;
+                        setNcRows(copy);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="date"
+                      value={row.dueDate}
+                      onChange={e => {
+                        const copy = [...ncRows];
+                        copy[idx].dueDate = e.target.value;
+                        setNcRows(copy);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      value={row.description}
+                      onChange={e => {
+                        const copy = [...ncRows];
+                        copy[idx].description = e.target.value;
+                        setNcRows(copy);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <div className="file-container">
+                      {row.file ? (
+                        <>
+                          <a
+                            href={row.file.fileData}
+                            download={row.file.fileName}
+                            className="file-download-btn"
+                          >
+                            <Download className="w-3 h-3 inline mr-1" />
+                            {row.file.fileName}
+                          </a>
+                          <button
+                            className="btn-remove-file"
+                            onClick={() => {
+                              const copy = [...ncRows];
+                              copy[idx].file = null;
+                              setNcRows(copy);
+                            }}
+                          >
+                            ✕
+                          </button>
+                        </>
+                      ) : (
+                        <input
+                          type="file"
+                          onChange={e => {
+                            if (e.target.files?.[0]) {
+                              processFileUpload(e.target.files[0], att => {
+                                const copy = [...ncRows];
+                                copy[idx].file = att;
+                                setNcRows(copy);
+                              });
+                            }
+                          }}
+                        />
+                      )}
+                    </div>
+                  </td>
+                  <td>
+                    <button
+                      className="btn btn-delete"
+                      onClick={() => setNcRows(ncRows.filter((_, i) => i !== idx))}
+                    >
+                      X
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <button
+          className="btn btn-add"
+          onClick={() =>
+            setNcRows([
+              ...ncRows,
+              {
+                id: Date.now().toString(),
+                date: new Date().toISOString().slice(0, 10),
+                title: '',
+                category: '',
+                dueDate: '',
+                description: '',
+                file: null,
+              },
+            ])
+          }
+        >
+          <Plus className="w-3.5 h-3.5" />
+          <span>Add Non-Compliance Row</span>
+        </button>
+      </div>
+
+      {/* ================= TAB 5 ================= */}
+      <div id="tab5" className={`tab-content ${activeTab === 'tab5' ? 'active' : 'hidden'}`}>
+        <div className="tab-export-bar">
+          <button className="btn btn-pdf" onClick={() => exportTabToPDF('tab5', 'TAB-5_QA_Report')}>
+            <FileText className="w-3.5 h-3.5" />
+            <span>Export PDF</span>
+          </button>
+          <button className="btn btn-word" onClick={() => exportTabToWord('tab5', 'TAB-5_QA_Report')}>
+            <FileSpreadsheet className="w-3.5 h-3.5" />
+            <span>Export Word</span>
+          </button>
+        </div>
+        <h2 className="text-base font-bold text-[#1a365d] mb-1">TAB-5 (Quality Assurance)</h2>
+        <h3 className="text-xs font-semibold text-slate-500 mb-3">Linac / Brachy / Diagnostic QA Log</h3>
+        <div className="overflow-x-auto">
+          <table className="portal-table" id="qaTable">
+            <thead>
+              <tr>
+                <th style={{ width: '130px' }}>Date</th>
+                <th>Title / Machine</th>
+                <th style={{ width: '110px' }}>Status</th>
+                <th>Attachment</th>
+                <th>Description</th>
+                <th style={{ width: '60px' }}>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {qaRows.map((row, idx) => (
+                <tr key={row.id}>
+                  <td>
+                    <input
+                      type="date"
+                      value={row.date}
+                      onChange={e => {
+                        const copy = [...qaRows];
+                        copy[idx].date = e.target.value;
+                        setQaRows(copy);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      value={row.title}
+                      onChange={e => {
+                        const copy = [...qaRows];
+                        copy[idx].title = e.target.value;
+                        setQaRows(copy);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      value={row.status}
+                      className={
+                        row.status?.toUpperCase() === 'PASS'
+                          ? '!text-emerald-700 !font-bold'
+                          : row.status?.toUpperCase() === 'FAIL'
+                          ? '!text-rose-600 !font-bold'
+                          : ''
+                      }
+                      onChange={e => {
+                        const copy = [...qaRows];
+                        copy[idx].status = e.target.value;
+                        setQaRows(copy);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <div className="file-container">
+                      {row.file ? (
+                        <>
+                          <a
+                            href={row.file.fileData}
+                            download={row.file.fileName}
+                            className="file-download-btn"
+                          >
+                            <Download className="w-3 h-3 inline mr-1" />
+                            {row.file.fileName}
+                          </a>
+                          <button
+                            className="btn-remove-file"
+                            onClick={() => {
+                              const copy = [...qaRows];
+                              copy[idx].file = null;
+                              setQaRows(copy);
+                            }}
+                          >
+                            ✕
+                          </button>
+                        </>
+                      ) : (
+                        <input
+                          type="file"
+                          onChange={e => {
+                            if (e.target.files?.[0]) {
+                              processFileUpload(e.target.files[0], att => {
+                                const copy = [...qaRows];
+                                copy[idx].file = att;
+                                setQaRows(copy);
+                              });
+                            }
+                          }}
+                        />
+                      )}
+                    </div>
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      value={row.description}
+                      onChange={e => {
+                        const copy = [...qaRows];
+                        copy[idx].description = e.target.value;
+                        setQaRows(copy);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <button
+                      className="btn btn-delete"
+                      onClick={() => setQaRows(qaRows.filter((_, i) => i !== idx))}
+                    >
+                      X
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <button
+          className="btn btn-add"
+          onClick={() =>
+            setQaRows([
+              ...qaRows,
+              {
+                id: Date.now().toString(),
+                date: new Date().toISOString().slice(0, 10),
+                title: '',
+                status: 'PASS',
+                file: null,
+                description: '',
+              },
+            ])
+          }
+        >
+          <Plus className="w-3.5 h-3.5" />
+          <span>Add QA Entry</span>
+        </button>
+      </div>
+
+      {/* ================= TAB 6 ================= */}
+      <div id="tab6" className={`tab-content ${activeTab === 'tab6' ? 'active' : 'hidden'}`}>
+        <div className="tab-export-bar">
+          <button className="btn btn-pdf" onClick={() => exportTabToPDF('tab6', 'TAB-6_Academic_Report')}>
+            <FileText className="w-3.5 h-3.5" />
+            <span>Export PDF</span>
+          </button>
+          <button className="btn btn-word" onClick={() => exportTabToWord('tab6', 'TAB-6_Academic_Report')}>
+            <FileSpreadsheet className="w-3.5 h-3.5" />
+            <span>Export Word</span>
+          </button>
+        </div>
+        <h2 className="text-base font-bold text-[#1a365d] mb-2">TAB-6 (Academic Activity)</h2>
+        <div className="overflow-x-auto">
+          <table className="portal-table" id="academicTable">
+            <thead>
+              <tr>
+                <th style={{ width: '130px' }}>Date</th>
+                <th>Activity / Objective</th>
+                <th>Description</th>
+                <th style={{ width: '130px' }}>Due Date</th>
+                <th>Attachment</th>
+                <th style={{ width: '60px' }}>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {academicRows.map((row, idx) => (
+                <tr key={row.id}>
+                  <td>
+                    <input
+                      type="date"
+                      value={row.date}
+                      onChange={e => {
+                        const copy = [...academicRows];
+                        copy[idx].date = e.target.value;
+                        setAcademicRows(copy);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      value={row.activity}
+                      onChange={e => {
+                        const copy = [...academicRows];
+                        copy[idx].activity = e.target.value;
+                        setAcademicRows(copy);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      value={row.description}
+                      onChange={e => {
+                        const copy = [...academicRows];
+                        copy[idx].description = e.target.value;
+                        setAcademicRows(copy);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="date"
+                      value={row.dueDate}
+                      onChange={e => {
+                        const copy = [...academicRows];
+                        copy[idx].dueDate = e.target.value;
+                        setAcademicRows(copy);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <div className="file-container">
+                      {row.file ? (
+                        <>
+                          <a
+                            href={row.file.fileData}
+                            download={row.file.fileName}
+                            className="file-download-btn"
+                          >
+                            <Download className="w-3 h-3 inline mr-1" />
+                            {row.file.fileName}
+                          </a>
+                          <button
+                            className="btn-remove-file"
+                            onClick={() => {
+                              const copy = [...academicRows];
+                              copy[idx].file = null;
+                              setAcademicRows(copy);
+                            }}
+                          >
+                            ✕
+                          </button>
+                        </>
+                      ) : (
+                        <input
+                          type="file"
+                          onChange={e => {
+                            if (e.target.files?.[0]) {
+                              processFileUpload(e.target.files[0], att => {
+                                const copy = [...academicRows];
+                                copy[idx].file = att;
+                                setAcademicRows(copy);
+                              });
+                            }
+                          }}
+                        />
+                      )}
+                    </div>
+                  </td>
+                  <td>
+                    <button
+                      className="btn btn-delete"
+                      onClick={() => setAcademicRows(academicRows.filter((_, i) => i !== idx))}
+                    >
+                      X
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <button
+          className="btn btn-add"
+          onClick={() =>
+            setAcademicRows([
+              ...academicRows,
+              {
+                id: Date.now().toString(),
+                date: new Date().toISOString().slice(0, 10),
+                activity: '',
+                description: '',
+                dueDate: '',
+                file: null,
+              },
+            ])
+          }
+        >
+          <Plus className="w-3.5 h-3.5" />
+          <span>Add Academic Entry</span>
+        </button>
+      </div>
+
+      {/* ================= TAB 7 ================= */}
+      <div id="tab7" className={`tab-content ${activeTab === 'tab7' ? 'active' : 'hidden'}`}>
+        <div className="tab-export-bar">
+          <button className="btn btn-pdf" onClick={() => exportTabToPDF('tab7', 'TAB-7_Manuals_Report')}>
+            <FileText className="w-3.5 h-3.5" />
+            <span>Export PDF</span>
+          </button>
+          <button className="btn btn-word" onClick={() => exportTabToWord('tab7', 'TAB-7_Manuals_Report')}>
+            <FileSpreadsheet className="w-3.5 h-3.5" />
+            <span>Export Word</span>
+          </button>
+        </div>
+        <h2 className="text-base font-bold text-[#1a365d] mb-2">TAB-7 (Documents & Manuals)</h2>
+        <div className="overflow-x-auto">
+          <table className="portal-table" id="manualsTable">
+            <thead>
+              <tr>
+                <th style={{ width: '60px' }}>Sr.No</th>
+                <th>Title</th>
+                <th>Attachment File</th>
+                <th style={{ width: '60px' }}>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {manualRows.map((row, idx) => (
+                <tr key={row.id}>
+                  <td>{idx + 1}</td>
+                  <td>
+                    <input
+                      type="text"
+                      value={row.title}
+                      onChange={e => {
+                        const copy = [...manualRows];
+                        copy[idx].title = e.target.value;
+                        setManualRows(copy);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <div className="file-container">
+                      {row.file ? (
+                        <>
+                          <a
+                            href={row.file.fileData}
+                            download={row.file.fileName}
+                            className="file-download-btn"
+                          >
+                            <Download className="w-3 h-3 inline mr-1" />
+                            {row.file.fileName}
+                          </a>
+                          <button
+                            className="btn-remove-file"
+                            onClick={() => {
+                              const copy = [...manualRows];
+                              copy[idx].file = null;
+                              setManualRows(copy);
+                            }}
+                          >
+                            ✕
+                          </button>
+                        </>
+                      ) : (
+                        <input
+                          type="file"
+                          onChange={e => {
+                            if (e.target.files?.[0]) {
+                              processFileUpload(e.target.files[0], att => {
+                                const copy = [...manualRows];
+                                copy[idx].file = att;
+                                setManualRows(copy);
+                              });
+                            }
+                          }}
+                        />
+                      )}
+                    </div>
+                  </td>
+                  <td>
+                    <button
+                      className="btn btn-delete"
+                      onClick={() => setManualRows(manualRows.filter((_, i) => i !== idx))}
+                    >
+                      X
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <button
+          className="btn btn-add"
+          onClick={() =>
+            setManualRows([
+              ...manualRows,
+              {
+                id: Date.now().toString(),
+                title: '',
+                file: null,
+              },
+            ])
+          }
+        >
+          <Plus className="w-3.5 h-3.5" />
+          <span>Add Document</span>
+        </button>
+      </div>
+
+      {/* ================= TAB 8 ================= */}
+      <div id="tab8" className={`tab-content ${activeTab === 'tab8' ? 'active' : 'hidden'}`}>
+        <div className="tab-export-bar">
+          <button className="btn btn-pdf" onClick={() => exportTabToPDF('tab8', 'TAB-8_OutputVariation_Report')}>
+            <FileText className="w-3.5 h-3.5" />
+            <span>Export PDF</span>
+          </button>
+          <button className="btn btn-word" onClick={() => exportTabToWord('tab8', 'TAB-8_OutputVariation_Report')}>
+            <FileSpreadsheet className="w-3.5 h-3.5" />
+            <span>Export Word</span>
+          </button>
+        </div>
+        <h2 className="text-base font-bold text-[#1a365d] mb-2">TAB-8 (Monthly Output Variation)</h2>
+        <div className="overflow-x-auto">
+          <table className="portal-table" id="outputTable">
+            <thead>
+              <tr>
+                <th style={{ width: '160px' }}>Date</th>
+                <th>Title</th>
+                <th>Attachment</th>
+                <th style={{ width: '60px' }}>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {outputRows.map((row, idx) => (
+                <tr key={row.id}>
+                  <td>
+                    <input
+                      type="date"
+                      value={row.date}
+                      onChange={e => {
+                        const copy = [...outputRows];
+                        copy[idx].date = e.target.value;
+                        setOutputRows(copy);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      value={row.title}
+                      onChange={e => {
+                        const copy = [...outputRows];
+                        copy[idx].title = e.target.value;
+                        setOutputRows(copy);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <div className="file-container">
+                      {row.file ? (
+                        <>
+                          <a
+                            href={row.file.fileData}
+                            download={row.file.fileName}
+                            className="file-download-btn"
+                          >
+                            <Download className="w-3 h-3 inline mr-1" />
+                            {row.file.fileName}
+                          </a>
+                          <button
+                            className="btn-remove-file"
+                            onClick={() => {
+                              const copy = [...outputRows];
+                              copy[idx].file = null;
+                              setOutputRows(copy);
+                            }}
+                          >
+                            ✕
+                          </button>
+                        </>
+                      ) : (
+                        <input
+                          type="file"
+                          onChange={e => {
+                            if (e.target.files?.[0]) {
+                              processFileUpload(e.target.files[0], att => {
+                                const copy = [...outputRows];
+                                copy[idx].file = att;
+                                setOutputRows(copy);
+                              });
+                            }
+                          }}
+                        />
+                      )}
+                    </div>
+                  </td>
+                  <td>
+                    <button
+                      className="btn btn-delete"
+                      onClick={() => setOutputRows(outputRows.filter((_, i) => i !== idx))}
+                    >
+                      X
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <button
+          className="btn btn-add"
+          onClick={() =>
+            setOutputRows([
+              ...outputRows,
+              {
+                id: Date.now().toString(),
+                date: new Date().toISOString().slice(0, 10),
+                title: '',
+                file: null,
+              },
+            ])
+          }
+        >
+          <Plus className="w-3.5 h-3.5" />
+          <span>Add Output Record</span>
+        </button>
+      </div>
+
+      {/* ================= TAB 9 ================= */}
+      <div id="tab9" className={`tab-content ${activeTab === 'tab9' ? 'active' : 'hidden'}`}>
+        <div className="tab-export-bar">
+          <button className="btn btn-pdf" onClick={() => exportTabToPDF('tab9', 'TAB-9_MachineLog_Report')}>
+            <FileText className="w-3.5 h-3.5" />
+            <span>Export PDF</span>
+          </button>
+          <button className="btn btn-word" onClick={() => exportTabToWord('tab9', 'TAB-9_MachineLog_Report')}>
+            <FileSpreadsheet className="w-3.5 h-3.5" />
+            <span>Export Word</span>
+          </button>
+        </div>
+        <h2 className="text-base font-bold text-[#1a365d] mb-2">TAB-9 (Machine Log and Complaints)</h2>
+        <div className="overflow-x-auto">
+          <table className="portal-table" id="logTable">
+            <thead>
+              <tr>
+                <th style={{ width: '130px' }}>Date</th>
+                <th>Title / Machine</th>
+                <th>Description / Issue</th>
+                <th>Attachment</th>
+                <th style={{ width: '60px' }}>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {logRows.map((row, idx) => (
+                <tr key={row.id}>
+                  <td>
+                    <input
+                      type="date"
+                      value={row.date}
+                      onChange={e => {
+                        const copy = [...logRows];
+                        copy[idx].date = e.target.value;
+                        setLogRows(copy);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      value={row.machine}
+                      onChange={e => {
+                        const copy = [...logRows];
+                        copy[idx].machine = e.target.value;
+                        setLogRows(copy);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      value={row.issue}
+                      onChange={e => {
+                        const copy = [...logRows];
+                        copy[idx].issue = e.target.value;
+                        setLogRows(copy);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <div className="file-container">
+                      {row.file ? (
+                        <>
+                          <a
+                            href={row.file.fileData}
+                            download={row.file.fileName}
+                            className="file-download-btn"
+                          >
+                            <Download className="w-3 h-3 inline mr-1" />
+                            {row.file.fileName}
+                          </a>
+                          <button
+                            className="btn-remove-file"
+                            onClick={() => {
+                              const copy = [...logRows];
+                              copy[idx].file = null;
+                              setLogRows(copy);
+                            }}
+                          >
+                            ✕
+                          </button>
+                        </>
+                      ) : (
+                        <input
+                          type="file"
+                          onChange={e => {
+                            if (e.target.files?.[0]) {
+                              processFileUpload(e.target.files[0], att => {
+                                const copy = [...logRows];
+                                copy[idx].file = att;
+                                setLogRows(copy);
+                              });
+                            }
+                          }}
+                        />
+                      )}
+                    </div>
+                  </td>
+                  <td>
+                    <button
+                      className="btn btn-delete"
+                      onClick={() => setLogRows(logRows.filter((_, i) => i !== idx))}
+                    >
+                      X
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <button
+          className="btn btn-add"
+          onClick={() =>
+            setLogRows([
+              ...logRows,
+              {
+                id: Date.now().toString(),
+                date: new Date().toISOString().slice(0, 10),
+                machine: '',
+                issue: '',
+                file: null,
+              },
+            ])
+          }
+        >
+          <Plus className="w-3.5 h-3.5" />
+          <span>Add Log Entry</span>
+        </button>
+      </div>
+
+      {/* ================= TAB 10: PICKET FENCE PROFILE ANALYZER ================= */}
+      <div id="tab10" className={`tab-content ${activeTab === 'tab10' ? 'active' : 'hidden'}`}>
+        <Tab10PicketFence
+          onAddToQALog={handleAddPicketFenceToQA}
+          savedState={picketFenceState}
+          onStateChange={setPicketFenceState}
+        />
+      </div>
+
+      {/* Portal Footer */}
+      <footer className="text-center text-xs text-slate-500 mt-6 py-4 border-t border-slate-200">
+        Radiological Safety Management System & Halcyon Picket Fence QA Module · Client-side encryption & local storage persistence
+      </footer>
+    </div>
+  );
+}
